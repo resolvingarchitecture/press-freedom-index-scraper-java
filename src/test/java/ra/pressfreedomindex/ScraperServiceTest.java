@@ -46,8 +46,6 @@ public class ScraperServiceTest {
         };
         service = new PFIScraperService(producer, listener);
         service.start(null);
-        // Give it time to retrieve web pages
-        Wait.aSec(5);
     }
 
     @AfterClass
@@ -56,7 +54,7 @@ public class ScraperServiceTest {
     }
 
     @Test
-    public void verifyEntries() {
+    public void verifyIndex() {
         Envelope env = Envelope.documentFactory();
         DLC.addRoute(PFIScraperService.class.getName(), PFIScraperService.OPERATION_GET_SCORE, env);
         service.handleDocument(env);

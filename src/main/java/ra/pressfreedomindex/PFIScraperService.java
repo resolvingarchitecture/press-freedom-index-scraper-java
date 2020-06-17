@@ -34,13 +34,21 @@ public class PFIScraperService extends BaseService {
     public static final String OPERATION_SAVE_INDEX = "SAVE_INDEX";
     public static final String OPERATION_SAVE_MAP = "SAVE_MAP";
 
-    private File indexDirectory;
-    private URL tableURL;
-    private String mapFileName;
+    private File dbDirectory;
+
+    private URL indexURL;
+    private final String indexFileName = "pfi.json";
+    private File indexFile;
     private final Map<String,PressFreedomIndexEntry> index = new HashMap<>();
+    private Date indexLastScraped;
+
+    private URL mapURL;
+    private String mapName;
+    private final String mapFileName = "map.json";
     private Image mapImage;
-    private Date entriesLastScraped;
-    private Date mapLastScraped;
+    private File mapFile;
+
+    private Date mapLastRetrieved;
 
     public PFIScraperService() {
         super();
@@ -75,7 +83,7 @@ public class PFIScraperService extends BaseService {
             }
             case OPERATION_GET_INDEX: {
                 if(index==null || index.size()==0) {
-                    scrapeTableRequest();
+                    scrapeIndexRequest();
                     DLC.addErrorMessage("NOT_READY", e);
                     break;
                 }
@@ -84,12 +92,7 @@ public class PFIScraperService extends BaseService {
             }
             case OPERATION_GET_MAP: {
                 if(mapImage==null) {
-                    mapImage = loadMap();
-                    if(mapImage==null) {
-                        getMapRequest();
-                        DLC.addErrorMessage("NOT_READY", e);
-                        break;
-                    }
+                    loadMap();
                 }
                 DLC.addEntity(mapImage, e);
                 break;
@@ -100,11 +103,16 @@ public class PFIScraperService extends BaseService {
                     LOG.warning("No HTML entries returned.");
                     break;
                 }
-                scrapeTable((String)obj);
+                saveIndex((String)obj);
                 break;
             }
             case OPERATION_SAVE_MAP: {
-
+                Object obj = DLC.getEntity(e);
+                if(obj==null) {
+                    LOG.warning("No map returned.");
+                    break;
+                }
+                saveMap((byte[])obj);
                 break;
             }
             default: {
@@ -114,19 +122,49 @@ public class PFIScraperService extends BaseService {
         }
     }
 
-    private void scrapeTableRequest() {
+    private boolean loadIndex() {
+        if(index.size() == 0) {
+            byte[] data = new byte[0];
+            try {
+                data = FileUtil.readFile(dbDirectory.getAbsolutePath());
+            } catch (IOException e) {
+                LOG.warning(e.getLocalizedMessage());
+            }
+            if (data != null && data.length > 0) {
+
+            } else {
+                getMapRequest();
+            }
+        }
+        return true;
+    }
+
+    private void scrapeIndexRequest() {
         Envelope env = Envelope.documentFactory();
         DLC.addRoute(PFIScraperService.class.getName(), OPERATION_SAVE_INDEX, env);
         DLC.addRoute("ra.network.NetworkService", "SEND", env);
-        env.setURL(tableURL);
+        env.setURL(indexURL);
         producer.send(env);
     }
 
-    private void scrapeTable(String html) {
+    private boolean saveIndex(String html) {
+        if(indexFile==null) {
+            indexFile = new File(dbDirectory, indexFileName);
+            try {
+                if(!indexFile.exists() && !indexFile.createNewFile()) {
+                    LOG.warning("Unable to create index json file: "+ dbDirectory.getAbsolutePath()+"/"+indexFileName);
+                    return false;
+                }
+            } catch (IOException e) {
+                LOG.warning(e.getLocalizedMessage());
+                return false;
+            }
+        }
         Document dom = Jsoup.parse(html);
         int year;
         Elements rows = dom.getElementsByTag("tr");
         PressFreedomIndexEntry entry;
+        StringBuilder json = new StringBuilder("{");
         for(Element tr : rows) {
             String countryCode;
             PressFreedomIndex index;
@@ -151,32 +189,65 @@ public class PFIScraperService extends BaseService {
             }
 
         }
-        entriesLastScraped = new Date();
+        json.append("}");
+        indexLastScraped = new Date();
+        return true;
+    }
+
+    private boolean loadMap() {
+        if(mapImage==null) {
+            if(mapFile==null) {
+                mapFile = new File(dbDirectory, mapFileName);
+                try {
+                    if(!mapFile.exists() && !mapFile.createNewFile()) {
+                        LOG.warning("Unable to create map file: "+dbDirectory+"/"+mapFileName);
+                        return false;
+                    }
+                } catch (IOException e) {
+                    LOG.warning(e.getLocalizedMessage());
+                    return false;
+                }
+            }
+            byte[] data = new byte[0];
+            try {
+                data = FileUtil.readFile(mapFile.getAbsolutePath());
+            } catch (IOException e) {
+                LOG.warning(e.getLocalizedMessage());
+            }
+            if (data != null && data.length > 0) {
+                mapImage = new Image();
+                mapImage.setBody(data, false, false);
+                mapImage.setContentType("application/pdf");
+                mapImage.setName(mapName);
+            } else {
+                getMapRequest();
+            }
+        }
+        return true;
     }
 
     private void getMapRequest() {
         Envelope env = Envelope.documentFactory();
         DLC.addRoute(PFIScraperService.class.getName(), OPERATION_SAVE_MAP, env);
         DLC.addRoute("ra.network.NetworkService", "SEND", env);
-        env.setURL(tableURL);
+        env.setURL(mapURL);
         producer.send(env);
     }
 
-    private void saveMap(byte[] data) {
-
-    }
-
-    private Image loadMap() {
-        if(mapImage==null) {
-            mapImage = new Image();
-            byte[] data = FileUtil.readFileOnClasspath(this.getClass().getClassLoader(), mapFileName);
-            if (data != null && data.length > 0) {
-                mapImage.setBody(data, false, false);
-                mapImage.setContentType("application/pdf");
-                mapImage.setName(mapFileName);
+    private boolean saveMap(byte[] pdf) {
+        if(mapFile==null) {
+            mapFile = new File(dbDirectory, mapFileName);
+            try {
+                if(!mapFile.exists() && !mapFile.createNewFile()) {
+                    LOG.warning("Unable to create map file: "+dbDirectory+"/"+mapFileName);
+                    return false;
+                }
+            } catch (IOException e) {
+                LOG.warning(e.getLocalizedMessage());
+                return false;
             }
         }
-        return mapImage;
+        return FileUtil.writeFile(pdf, mapFile.getAbsolutePath());
     }
 
     @Override
@@ -192,10 +263,12 @@ public class PFIScraperService extends BaseService {
             config = p;
         }
 
-        String tableURLString = config.getProperty("ra.pressfreedomindex.url.table");
-        mapFileName = config.getProperty("ra.pressfreedomindex.map");
+        String indexURLString = config.getProperty("ra.pressfreedomindex.index.url");
+        String mapURLString = config.getProperty("ra.pressfreedomindex.map.url");
+        mapName = config.getProperty("rs.pressfreedomindex.map.name");
         try {
-            tableURL = new URL("https://"+tableURLString);
+            indexURL = new URL("https://"+indexURLString);
+            mapURL = new URL("https://"+mapURLString+mapName);
         } catch (MalformedURLException e) {
             LOG.severe(e.getLocalizedMessage());
             return false;
@@ -203,19 +276,19 @@ public class PFIScraperService extends BaseService {
 
         // Directories
         try {
-            indexDirectory = new File(getServiceDirectory(), "db");
-            if(!indexDirectory.exists() && !indexDirectory.mkdir()) {
+            dbDirectory = new File(getServiceDirectory(), "db");
+            if(!dbDirectory.exists() && !dbDirectory.mkdir()) {
                 LOG.warning("Unable to create db directory at: "+getServiceDirectory().getAbsolutePath()+"/db");
             } else {
-                config.setProperty("ra.pressfreedomindex.dir", indexDirectory.getCanonicalPath());
+                config.setProperty("ra.pressfreedomindex.dir", dbDirectory.getCanonicalPath());
             }
         } catch (IOException e) {
             LOG.warning("IOException caught while building db directory: \n"+e.getLocalizedMessage());
         }
 
-        // Load Entries and Map if present
+        // Load Map and Index
         loadMap();
-        scrapeTableRequest();
+        loadIndex();
 
         return true;
     }
