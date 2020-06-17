@@ -29,15 +29,15 @@ public class PFIScraperService extends BaseService {
     private static final Logger LOG = Logger.getLogger(PFIScraperService.class.getName());
 
     public static final String OPERATION_GET_SCORE = "GET_SCORE";
-    public static final String OPERATION_UPDATE_ENTRIES = "UPDATE_ENTRIES";
-    public static final String OPERATION_GET_MAP = "UPDATE_MAP";
+    public static final String OPERATION_GET_INDEX = "GET_INDEX";
+    public static final String OPERATION_GET_MAP = "GET_MAP";
+    public static final String OPERATION_SAVE_INDEX = "SAVE_INDEX";
+    public static final String OPERATION_SAVE_MAP = "SAVE_MAP";
 
     private File indexDirectory;
     private URL tableURL;
-    private String rawTableHTML;
     private String mapFileName;
-    private String rawMapHTML;
-    private Map<String,PressFreedomIndexEntry> entries = new HashMap<>();
+    private final Map<String,PressFreedomIndexEntry> index = new HashMap<>();
     private Image mapImage;
     private Date entriesLastScraped;
     private Date mapLastScraped;
@@ -56,7 +56,7 @@ public class PFIScraperService extends BaseService {
         Route r = e.getRoute();
         switch (r.getOperation()) {
             case OPERATION_GET_SCORE: {
-                if(entries.size()==0) {
+                if(index.size()==0) {
                     DLC.addErrorMessage("NOT_READY", e);
                     break;
                 }
@@ -65,7 +65,7 @@ public class PFIScraperService extends BaseService {
                     DLC.addErrorMessage("COUNTRY_CODE_REQUIRED", e);
                     break;
                 }
-                PressFreedomIndexEntry entry = entries.get(countryCode);
+                PressFreedomIndexEntry entry = index.get(countryCode);
                 if(entry==null) {
                     DLC.addErrorMessage("NO_ENTRY", e);
                     break;
@@ -73,7 +73,28 @@ public class PFIScraperService extends BaseService {
                 DLC.addEntity(entry, e);
                 break;
             }
-            case OPERATION_UPDATE_ENTRIES: {
+            case OPERATION_GET_INDEX: {
+                if(index==null || index.size()==0) {
+                    scrapeTableRequest();
+                    DLC.addErrorMessage("NOT_READY", e);
+                    break;
+                }
+                DLC.addEntity(index.values(),e);
+                break;
+            }
+            case OPERATION_GET_MAP: {
+                if(mapImage==null) {
+                    mapImage = loadMap();
+                    if(mapImage==null) {
+                        getMapRequest();
+                        DLC.addErrorMessage("NOT_READY", e);
+                        break;
+                    }
+                }
+                DLC.addEntity(mapImage, e);
+                break;
+            }
+            case OPERATION_SAVE_INDEX: {
                 Object obj = DLC.getEntity(e);
                 if(obj==null) {
                     LOG.warning("No HTML entries returned.");
@@ -82,11 +103,8 @@ public class PFIScraperService extends BaseService {
                 scrapeTable((String)obj);
                 break;
             }
-            case OPERATION_GET_MAP: {
-                if(mapImage==null) {
-                    mapImage = loadMap();
-                }
-                DLC.addEntity(mapImage, e);
+            case OPERATION_SAVE_MAP: {
+
                 break;
             }
             default: {
@@ -98,7 +116,7 @@ public class PFIScraperService extends BaseService {
 
     private void scrapeTableRequest() {
         Envelope env = Envelope.documentFactory();
-        DLC.addRoute(PFIScraperService.class.getName(), OPERATION_UPDATE_ENTRIES, env);
+        DLC.addRoute(PFIScraperService.class.getName(), OPERATION_SAVE_INDEX, env);
         DLC.addRoute("ra.network.NetworkService", "SEND", env);
         env.setURL(tableURL);
         producer.send(env);
@@ -134,6 +152,18 @@ public class PFIScraperService extends BaseService {
 
         }
         entriesLastScraped = new Date();
+    }
+
+    private void getMapRequest() {
+        Envelope env = Envelope.documentFactory();
+        DLC.addRoute(PFIScraperService.class.getName(), OPERATION_SAVE_MAP, env);
+        DLC.addRoute("ra.network.NetworkService", "SEND", env);
+        env.setURL(tableURL);
+        producer.send(env);
+    }
+
+    private void saveMap(byte[] data) {
+
     }
 
     private Image loadMap() {
