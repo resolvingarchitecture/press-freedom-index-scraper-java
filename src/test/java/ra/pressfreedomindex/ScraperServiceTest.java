@@ -1,15 +1,16 @@
-package ra.servicebus;
+package ra.pressfreedomindex;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.junit.*;
-import ra.common.*;
-import ra.pressfreedomindex.PFIScraperService;
-import ra.pressfreedomindex.PressFreedomIndexEntry;
+import ra.common.DLC;
+import ra.common.Envelope;
+import ra.common.messaging.MessageProducer;
+import ra.common.service.ServiceStatus;
+import ra.common.service.ServiceStatusListener;
 import ra.util.Wait;
 
 import java.io.IOException;
-import java.util.Properties;
 import java.util.logging.Logger;
 
 public class ScraperServiceTest {

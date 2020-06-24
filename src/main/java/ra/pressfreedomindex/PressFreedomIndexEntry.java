@@ -1,7 +1,5 @@
 package ra.pressfreedomindex;
 
-import ra.common.PressFreedomIndex;
-
 public class PressFreedomIndexEntry {
 
     public final String countryCode;
