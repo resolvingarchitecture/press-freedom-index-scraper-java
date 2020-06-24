@@ -54,14 +54,14 @@ public class ScraperServiceTest {
         LOG.info("Teardown...");
     }
 
-    @Test
-    public void verifyIndex() {
-        Envelope env = Envelope.documentFactory();
-        DLC.addRoute(PFIScraperService.class.getName(), PFIScraperService.OPERATION_GET_SCORE, env);
-        service.handleDocument(env);
-        PressFreedomIndexEntry entry = (PressFreedomIndexEntry)DLC.getEntity(env);
-
-        Wait.aSec(2);
-    }
+//    @Test
+//    public void verifyIndex() {
+//        Envelope env = Envelope.documentFactory();
+//        DLC.addRoute(PFIScraperService.class.getName(), PFIScraperService.OPERATION_GET_SCORE, env);
+//        service.handleDocument(env);
+//        PressFreedomIndexEntry entry = (PressFreedomIndexEntry)DLC.getEntity(env);
+//
+//        Wait.aSec(2);
+//    }
 
 }
