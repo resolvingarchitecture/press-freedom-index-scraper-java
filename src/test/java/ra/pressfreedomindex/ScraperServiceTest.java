@@ -3,6 +3,7 @@ package ra.pressfreedomindex;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.junit.*;
+import ra.common.Client;
 import ra.common.DLC;
 import ra.common.Envelope;
 import ra.common.messaging.MessageProducer;
@@ -37,6 +38,13 @@ public class ScraperServiceTest {
                     DLC.addErrorMessage("IOException: "+e.getLocalizedMessage(), envelope);
                 }
                 return true;
+            }
+
+            @Override
+            public boolean send(Envelope envelope, Client client) {
+                boolean success = send(envelope);
+                client.reply(envelope);
+                return success;
             }
         };
         ServiceStatusListener listener = new ServiceStatusListener() {
