@@ -14,6 +14,7 @@ import ra.common.service.ServiceStatus;
 import ra.common.service.ServiceStatusListener;
 import ra.util.Config;
 import ra.util.FileUtil;
+import ra.util.tasks.TaskRunner;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,11 +28,16 @@ import java.util.logging.Logger;
 
 /**
  * Scrapes the Press Freedom Index web site's ranking table periodically caching it
- * and serving it up to service consumers.
+ * and serving it up to service consumers. Retrieves the index table and map image
+ * via the Network Manager to ensure proper communications privacy and non-blocked status.
  */
 public class PFIScraperService extends BaseService {
 
     private static final Logger LOG = Logger.getLogger(PFIScraperService.class.getName());
+
+    private static final String OPERATION_PROCESS_INDEX_DOC = "PROCESS_INDEX_DOC";
+    private static final String OPERATION_PROCESS_MAP_IMG = "PROCESS_INDEX_IMG";
+    private static final String OPERATION_PROCESS_VERSION_CHECK = "PROCESS_VERSION_CHECK";
 
     public static final String OPERATION_GET_SCORE = "GET_SCORE";
     public static final String OPERATION_GET_INDEX = "GET_INDEX";
@@ -68,6 +74,18 @@ public class PFIScraperService extends BaseService {
         // Incoming from internal Service requesting local Service
         Route r = e.getRoute();
         switch (r.getOperation()) {
+            case OPERATION_PROCESS_INDEX_DOC: {
+
+                break;
+            }
+            case OPERATION_PROCESS_MAP_IMG: {
+
+                break;
+            }
+            case OPERATION_PROCESS_VERSION_CHECK: {
+
+                break;
+            }
             case OPERATION_GET_SCORE: {
                 if(index.size()==0) {
                     DLC.addErrorMessage("NOT_READY", e);
@@ -294,6 +312,14 @@ public class PFIScraperService extends BaseService {
         // Load Map and Index
         loadMap();
         loadIndex();
+
+        if(index==null || mapImage==null) {
+            // Not loaded at this point means not persisted -> Get Index
+
+        } else {
+            // Check version to see if a new one exists to pull down
+
+        }
 
         return true;
     }
