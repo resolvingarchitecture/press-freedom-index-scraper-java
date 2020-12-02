@@ -8,7 +8,7 @@ import ra.common.DLC;
 import ra.common.Envelope;
 import ra.common.messaging.MessageProducer;
 import ra.common.service.ServiceStatus;
-import ra.common.service.ServiceStatusListener;
+import ra.common.service.ServiceStatusObserver;
 import ra.util.Wait;
 
 import java.io.IOException;
@@ -46,14 +46,20 @@ public class ScraperServiceTest {
                 client.reply(envelope);
                 return success;
             }
+
+            @Override
+            public boolean deadLetter(Envelope envelope) {
+                LOG.info("Dead lettering envelope: "+envelope.toJSON());
+                return true;
+            }
         };
-        ServiceStatusListener listener = new ServiceStatusListener() {
+        ServiceStatusObserver observer = new ServiceStatusObserver() {
             @Override
             public void serviceStatusChanged(String serviceName, ServiceStatus serviceStatus) {
                 LOG.info(serviceName+" status changed to "+serviceStatus.name());
             }
         };
-        service = new PFIScraperService(producer, listener);
+        service = new PFIScraperService(producer, observer);
         service.start(null);
     }
 

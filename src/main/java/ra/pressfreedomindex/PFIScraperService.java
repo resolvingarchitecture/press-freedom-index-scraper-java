@@ -11,7 +11,7 @@ import ra.common.messaging.MessageProducer;
 import ra.common.route.Route;
 import ra.common.service.BaseService;
 import ra.common.service.ServiceStatus;
-import ra.common.service.ServiceStatusListener;
+import ra.common.service.ServiceStatusObserver;
 import ra.util.Config;
 import ra.util.FileUtil;
 import ra.util.tasks.TaskRunner;
@@ -65,8 +65,8 @@ public class PFIScraperService extends BaseService {
         super();
     }
 
-    public PFIScraperService(MessageProducer producer, ServiceStatusListener serviceStatusListener) {
-        super(producer, serviceStatusListener);
+    public PFIScraperService(MessageProducer producer, ServiceStatusObserver serviceStatusObserver) {
+        super(producer, serviceStatusObserver);
     }
 
     @Override
