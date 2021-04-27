@@ -5,7 +5,7 @@
 
     <groupId>resolvingarchitecture</groupId>
 	<artifactId>press-freedom-index</artifactId>
-	<version>1.0.2</version>
+	<version>1.0.3</version>
 
 	<packaging>jar</packaging>
 
@@ -44,7 +44,7 @@
 		<dependency>
 			<groupId>resolvingarchitecture</groupId>
 			<artifactId>common</artifactId>
-			<version>1.0.6</version>
+			<version>1.0.7</version>
 		</dependency>
 
         <!-- https://mvnrepository.com/artifact/org.jsoup/jsoup -->
