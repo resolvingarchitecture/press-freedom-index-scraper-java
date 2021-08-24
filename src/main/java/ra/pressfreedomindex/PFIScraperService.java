@@ -4,7 +4,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import ra.common.DLC;
 import ra.common.Envelope;
 import ra.common.content.Image;
 import ra.common.messaging.MessageProducer;
@@ -12,9 +11,9 @@ import ra.common.route.Route;
 import ra.common.service.BaseService;
 import ra.common.service.ServiceStatus;
 import ra.common.service.ServiceStatusObserver;
-import ra.util.Config;
-import ra.util.FileUtil;
-import ra.util.tasks.TaskRunner;
+import ra.common.Config;
+import ra.common.FileUtil;
+import ra.common.tasks.TaskRunner;
 
 import java.io.File;
 import java.io.IOException;
@@ -88,40 +87,40 @@ public class PFIScraperService extends BaseService {
             }
             case OPERATION_GET_SCORE: {
                 if(index.size()==0) {
-                    DLC.addErrorMessage("NOT_READY", e);
+                    e.addErrorMessage("NOT_READY");
                     break;
                 }
-                String countryCode = (String)DLC.getEntity(e);
+                String countryCode = (String)e.getEntity();
                 if(countryCode==null) {
-                    DLC.addErrorMessage("COUNTRY_CODE_REQUIRED", e);
+                    e.addErrorMessage("COUNTRY_CODE_REQUIRED");
                     break;
                 }
                 PressFreedomIndexEntry entry = index.get(countryCode);
                 if(entry==null) {
-                    DLC.addErrorMessage("NO_ENTRY", e);
+                    e.addErrorMessage("NO_ENTRY");
                     break;
                 }
-                DLC.addEntity(entry, e);
+                e.addEntity(entry);
                 break;
             }
             case OPERATION_GET_INDEX: {
                 if(index==null || index.size()==0) {
                     scrapeIndexRequest();
-                    DLC.addErrorMessage("NOT_READY", e);
+                    e.addErrorMessage("NOT_READY");
                     break;
                 }
-                DLC.addEntity(index.values(),e);
+                e.addEntity(index.values());
                 break;
             }
             case OPERATION_GET_MAP: {
                 if(mapImage==null) {
                     loadMap();
                 }
-                DLC.addEntity(mapImage, e);
+                e.addEntity(mapImage);
                 break;
             }
             case OPERATION_SAVE_INDEX: {
-                Object obj = DLC.getEntity(e);
+                Object obj = e.getEntity();
                 if(obj==null) {
                     LOG.warning("No HTML entries returned.");
                     break;
@@ -130,7 +129,7 @@ public class PFIScraperService extends BaseService {
                 break;
             }
             case OPERATION_SAVE_MAP: {
-                Object obj = DLC.getEntity(e);
+                Object obj = e.getEntity();
                 if(obj==null) {
                     LOG.warning("No map returned.");
                     break;
@@ -163,11 +162,11 @@ public class PFIScraperService extends BaseService {
     }
 
     private void scrapeIndexRequest() {
-        Envelope env = Envelope.documentFactory();
-        DLC.addRoute(PFIScraperService.class.getName(), OPERATION_SAVE_INDEX, env);
-        DLC.addRoute("ra.network.NetworkService", "SEND", env);
-        env.setURL(indexURL);
-        producer.send(env);
+        Envelope e = Envelope.documentFactory();
+        e.addRoute(PFIScraperService.class.getName(), OPERATION_SAVE_INDEX);
+        e.addRoute("ra.network.NetworkService", "SEND");
+        e.setURL(indexURL);
+        producer.send(e);
     }
 
     private boolean saveIndex(String html) {
@@ -250,11 +249,11 @@ public class PFIScraperService extends BaseService {
     }
 
     private void getMapRequest() {
-        Envelope env = Envelope.documentFactory();
-        DLC.addRoute(PFIScraperService.class.getName(), OPERATION_SAVE_MAP, env);
-        DLC.addRoute("ra.network.NetworkService", "SEND", env);
-        env.setURL(mapURL);
-        producer.send(env);
+        Envelope e = Envelope.documentFactory();
+        e.addRoute(PFIScraperService.class.getName(), OPERATION_SAVE_MAP);
+        e.addRoute("ra.network.NetworkService", "SEND");
+        e.setURL(mapURL);
+        producer.send(e);
     }
 
     private boolean saveMap(byte[] pdf) {

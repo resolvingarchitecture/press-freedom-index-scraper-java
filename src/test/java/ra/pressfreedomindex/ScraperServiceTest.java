@@ -9,7 +9,7 @@ import ra.common.Envelope;
 import ra.common.messaging.MessageProducer;
 import ra.common.service.ServiceStatus;
 import ra.common.service.ServiceStatusObserver;
-import ra.util.Wait;
+import ra.common.Wait;
 
 import java.io.IOException;
 import java.util.logging.Logger;
